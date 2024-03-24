@@ -1,0 +1,245 @@
+#include <iostream>
+#include <string>
+#include <algorithm>
+#include <vector>
+#include <numeric>
+#include <conio.h>
+using namespace std;
+
+//Реализация шифра двойной перестановки
+class Cipher {
+public:
+    string encryption(string message) {
+        for (auto& h : message) h = toupper(h);
+
+        string key1, key2;
+        cout << "Введите первый и второй ключи: ";
+        cin >> key1 >> key2;
+
+        // Заменяем пробелы на _
+        for (char& c : message)  if (c == ' ') c = '_';
+
+        // Вычисляем размеры матрицы
+        size_t ROW = key2.length();
+        size_t COL = key1.length();
+
+        // Если остаётся пустое место - заполняем
+        while (ROW * COL > message.length()) message += "#";
+
+        // Инициализируем матрицу
+        vector<vector<string>> matrix(ROW, vector<string>(COL, "#"));
+
+        // Заполняем матрицу символами из сообщения
+        size_t messageIndex = 0;
+        for (size_t i = 0; i < ROW; ++i) {
+            for (size_t j = 0; j < COL; ++j) {
+                // Вычисляем индекс в сообщении
+                size_t index = i * COL + j;
+                // Заполняем элемент матрицы символом из сообщения
+                matrix[i][j] = message[index];
+            }
+        }
+
+        // Выводим оригинальную матрицу
+        cout << "Оригинальная матрица:" << endl;
+        printMatrix(matrix);
+        cout << endl;
+
+        // Переставляем столбцы по ключу
+        swapColumnsByKeys(matrix, key1);
+        
+        // Вывод матрицы после перестановки по столбцам
+        cout << "Перестановка по столбцам:" << endl;
+        printMatrix(matrix);
+        cout << endl;
+
+        
+        // Переставляем столбцы по ключу
+        swapRowsByKeys(matrix, key2);
+
+        // Выводим зашифрованную матрицу
+        cout << "Перестановка по строкам:" << endl;
+        printMatrix(matrix);
+        cout << endl;
+
+        //Выводим зашифрованную матрицу
+        cout << "Зашифрованная матрица:" << endl;
+        printMatrix(matrix);
+        cout << endl;
+
+        // Возвращаем зашифрованное сообщение
+        string encryptedMessage;
+        for (const auto& row : matrix) {
+            for (auto c : row) {
+                encryptedMessage += c;
+            }
+        }
+        return encryptedMessage;
+    }
+   
+    string decryption(string cryptedMsg) {
+        for (auto& h : cryptedMsg) h = toupper(h);
+
+        string key1, key2;
+        cout << "Введите первый и второй ключи: ";
+        cin >> key1 >> key2;
+
+        const size_t ROW = key2.length(); // длина строк
+        const size_t COL = key1.length(); // длина столбцов
+        string decryptedMessage = "";
+
+        // Создаем матрицу для хранения зашифрованного сообщения
+        vector<vector<string>> encryptedMatrix(ROW, vector<string>(COL));
+
+        // Заполняем матрицу зашифрованным сообщением
+        size_t index = 0;
+        for (size_t i = 0; i < ROW; ++i) {
+            for (size_t j = 0; j < COL; ++j) {
+                if (index < cryptedMsg.length()) encryptedMatrix[i][j] = cryptedMsg[index++];
+                else (encryptedMatrix[i][j] = "#"); // заполняем остаток ячеек символом "#"
+            }
+        }
+
+        // Выводим зашифрованную матрицу
+        cout << "Зашифрованная матрица:" << endl;
+        printMatrix(encryptedMatrix);
+        cout << endl;
+
+        // Создаем матрицу для хранения расшифрованного сообщения
+        vector<vector<string>> decryptedMatrix(ROW, vector<string>(COL));
+
+        // Заполняем расшифрованную матрицу согласно ключам и изначальным индексам
+        vector<size_t> originalRowIndices(ROW);
+        iota(originalRowIndices.begin(), originalRowIndices.end(), 0); // заполняем значениями от 0 до ROW - 1
+        
+        vector<size_t> originalColIndices(COL);
+        iota(originalColIndices.begin(), originalColIndices.end(), 0); // заполняем значениями от 0 до COL - 1
+
+        for (size_t i = 0; i < ROW; ++i) {
+            for (size_t j = 0; j < COL; ++j) {
+                size_t rowIndex = key2[i] - '0' - 1; // определяем изначальный индекс строки в зашифрованной матрице
+                size_t colIndex = key1[j] - '0' - 1; // определяем изначальный индекс столбца в зашифрованной матрице
+                decryptedMatrix[rowIndex][colIndex] = encryptedMatrix[i][j]; // расшифровываем элементы
+            }
+        }
+
+        // Выводим расшифрованную матрицу
+        cout << "Расшифрованная матрица:" << endl;
+        printMatrix(decryptedMatrix);
+        cout << endl;
+
+        // Формируем расшифрованное сообщение из матрицы
+        for (size_t i = 0; i < ROW; ++i) {
+            for (size_t j = 0; j < COL; ++j) {
+                decryptedMessage += decryptedMatrix[i][j];
+            }
+        }
+
+        // Удаляем все символы "#" из сообщения
+        decryptedMessage.erase(remove(decryptedMessage.begin(), decryptedMessage.end(), '#'), decryptedMessage.end());
+
+        // Заменяем символы "_" на пробелы
+        replace(decryptedMessage.begin(), decryptedMessage.end(), '_', ' ');
+
+
+
+        return decryptedMessage;
+    }
+
+private:
+    void printMatrix(vector<vector<string>>& matrix) {
+        for (int i = 0; i < matrix.size(); ++i) {
+            for (int j = 0; j < matrix[i].size(); ++j) {
+                cout << matrix[i][j] << " ";
+            } cout << endl;
+        }
+    }   
+   
+    void swapColumnsByKeys(vector<vector<string>>& matrix, const string& key) {
+        // Проверяем, что длина ключа совпадает с количеством столбцов в матрице
+        if (key.length() != matrix[0].size()) {
+            cerr << "Ошибка: длина ключа не совпадает с количеством столбцов в матрице." << endl;
+            return;
+        }
+
+        // Создаем временную матрицу для хранения результата
+        vector<vector<string>> temp(matrix.size(), vector<string>(matrix[0].size()));
+
+        // Проходим по каждому столбцу в матрице
+        for (size_t i = 0; i < key.length(); ++i) {
+            // Находим индекс нового столбца в матрице
+            size_t newIndex = key[i] - '0' - 1;
+
+            // Проверяем, что индекс находится в пределах размеров матрицы
+            if (newIndex >= matrix[0].size()) {
+                cerr << "Ошибка: неверный индекс столбца в ключе." << endl;
+                return;
+            }
+
+            // Копируем содержимое столбца из текущей позиции в новую
+            for (size_t j = 0; j < matrix.size(); ++j) {
+                temp[j][i] = matrix[j][newIndex];
+            }
+        }
+
+        // Заменяем исходную матрицу временной
+        matrix = temp;
+    }
+   
+    void swapRowsByKeys(vector<vector<string>>& matrix, const string& key) {
+        // Проверяем, что длина ключа совпадает с количеством строк в матрице
+        if (key.length() != matrix.size()) {
+            cerr << "Ошибка: длина ключа не совпадает с количеством строк в матрице." << endl;
+            return;
+        }
+
+        // Создаем временную матрицу для хранения результата
+        vector<vector<string>> temp(matrix.size(), vector<string>(matrix[0].size()));
+
+        // Проходим по каждой строке в матрице
+        for (size_t i = 0; i < key.length(); ++i) {
+            // Находим индекс новой строки в матрице
+            size_t newIndex = key[i] - '0' - 1;
+
+            // Проверяем, что индекс находится в пределах размеров матрицы
+            if (newIndex >= matrix.size()) {
+                cerr << "Ошибка: неверный индекс строки в ключе." << endl;
+                return;
+            }
+
+            // Копируем содержимое строки из текущей позиции в новую
+            temp[i] = matrix[newIndex];
+        }
+
+        // Заменяем исходную матрицу временной
+        matrix = temp;
+    }
+};
+
+int main() {
+    setlocale(LC_ALL, "ru");
+
+    Cipher shifr;
+    string msg, dMsg;
+    
+
+    //Зашифровка сообщения
+    cout << "Введите сообщение: ";
+    getline(cin, msg);
+    cout << "\n";
+
+    string encryptedMessage = shifr.encryption(msg);
+
+    cout << "Зашифрованное сообщение: " << encryptedMessage << "\n\n\n";
+
+    cout << "Введите зашифрованное сообщение: ";
+    cin >> dMsg;
+
+    //Расшифровка сообщения
+    string decryptedMsg = shifr.decryption(dMsg);
+    cout << "Расшифрованное сообщение: " << decryptedMsg << endl;
+
+    char ch = _getch();
+
+    return 0;
+}
