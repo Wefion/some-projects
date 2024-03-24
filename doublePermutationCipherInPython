@@ -1,0 +1,124 @@
+class Cipher:
+    @staticmethod
+    def printMatrix(matrix):
+        for row in matrix:
+            print(" ".join(row))
+    
+    @staticmethod
+    def swapColumnsByKeys(matrix, key):
+        temp = [['#' for _ in range(len(matrix[0]))] for _ in range(len(matrix))]
+        for i in range(len(key)):
+            new_index = int(key[i]) - 1
+            if new_index >= len(matrix[0]):
+                print("Ошибка: неверный индекс столбца в ключе.")
+                return
+            for j in range(len(matrix)):
+                temp[j][i] = matrix[j][new_index]
+        print("\nПерестановка по столбцам:")
+        Cipher.printMatrix(temp)
+        return temp
+
+    @staticmethod
+    def swapRowsByKeys(matrix, key):
+        temp = [['#' for _ in range(len(matrix[0]))] for _ in range(len(matrix))]
+        for i in range(len(key)):
+            new_index = int(key[i]) - 1
+            if new_index >= len(matrix):
+                print("Ошибка: неверный индекс строки в ключе.")
+                return
+            temp[i] = matrix[new_index]
+        print("\nПерестановка по строкам:")
+        Cipher.printMatrix(temp)
+        return temp
+
+    @staticmethod
+    def encryption(message):
+        message = message.upper()
+
+        key1, key2 = input("Введите первый и второй ключи: ").split()
+
+        message = message.replace(" ", "_")
+
+        ROW = len(key2)
+        COL = len(key1)
+
+        while ROW * COL > len(message):
+            message += "#"
+
+        matrix = [['#' for _ in range(COL)] for _ in range(ROW)]
+
+        message_index = 0
+        for i in range(ROW):
+            for j in range(COL):
+                if message_index < len(message):
+                    matrix[i][j] = message[message_index]
+                    message_index += 1
+
+        print("\nОригинальная матрица:")
+        Cipher.printMatrix(matrix)
+
+        matrix = Cipher.swapColumnsByKeys(matrix, key1)
+        matrix = Cipher.swapRowsByKeys(matrix, key2)
+
+        print("\nЗашифрованная матрица:")
+        Cipher.printMatrix(matrix)
+
+        encrypted_message = ""
+        for row in matrix:
+            for char in row:
+                encrypted_message += char
+
+        return encrypted_message
+
+    @staticmethod
+    def decryption(crypted_message):
+        crypted_message = crypted_message.upper()
+
+        key1, key2 = input("Введите первый и второй ключи: ").split()
+
+        ROW = len(key2)
+        COL = len(key1)
+
+        encrypted_matrix = [['#' for _ in range(COL)] for _ in range(ROW)]
+
+        index = 0
+        for i in range(ROW):
+            for j in range(COL):
+                if index < len(crypted_message):
+                    encrypted_matrix[i][j] = crypted_message[index]
+                    index += 1
+
+        print("\nЗашифрованная матрица:")
+        Cipher.printMatrix(encrypted_matrix)
+
+        decrypted_matrix = [['#' for _ in range(COL)] for _ in range(ROW)]
+
+        for i in range(ROW):
+            for j in range(COL):
+                row_index = int(key2[i]) - 1
+                col_index = int(key1[j]) - 1
+                decrypted_matrix[row_index][col_index] = encrypted_matrix[i][j]
+
+        print("\nРасшифрованная матрица:")
+        Cipher.printMatrix(decrypted_matrix)
+
+        decrypted_message = ""
+        for row in decrypted_matrix:
+            for char in row:
+                decrypted_message += char
+
+        decrypted_message = decrypted_message.replace("#", "")
+
+        return decrypted_message
+
+shifr = Cipher()
+
+# Зашифровка сообщения
+message = input("Введите сообщение: ")
+encrypted_message = shifr.encryption(message)
+print("\nЗашифрованное сообщение:", encrypted_message)
+
+# Расшифровка сообщения
+crypted_message = input("Введите зашифрованное сообщение: ")
+decrypted_message = shifr.decryption(crypted_message)
+print("\nРасшифрованное сообщение:", decrypted_message)
